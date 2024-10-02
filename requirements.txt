@@ -3,3 +3,4 @@ pyscreenshot
 sounddevice
 pillow
 geocoder
+numpy
