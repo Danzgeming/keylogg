@@ -3,3 +3,5 @@ backup.env
 .wav
 .png
 test.py
+steps.txt
+execute_main.ps1

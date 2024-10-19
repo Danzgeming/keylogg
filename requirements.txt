@@ -1,6 +1,10 @@
-pynput
-pyscreenshot
-sounddevice
-pillow
+dropbox
 geocoder
 numpy
+pillow
+poolmanager
+pynput
+pyscreenshot
+requests
+sounddevice
+urllib3
