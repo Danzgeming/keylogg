@@ -1,7 +1,10 @@
 .env
-backup.env
-.wav
 .png
-test.py
-steps.txt
+.wav
+backup.env
+build
+dist
 execute_main.ps1
+main.spec
+steps.txt
+test.py

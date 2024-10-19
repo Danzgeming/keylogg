@@ -3,6 +3,7 @@ geocoder
 numpy
 pillow
 poolmanager
+pyinstaller
 pynput
 pyscreenshot
 requests

