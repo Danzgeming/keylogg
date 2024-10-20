@@ -89,10 +89,8 @@ def upload_to_dropbox(hostname, dbx, wav_and_png_files):
             return
 
 
-
 def create_scheduled_task(executable_path, task_name):
     check_task_command = f'if (Get-ScheduledTask -TaskName "{task_name}" -ErrorAction SilentlyContinue) {{ exit 1 }} else {{ exit 0 }}'
-
     task_exists = subprocess.run(
         ["powershell", "-Command", check_task_command], capture_output=True, text=True
     )
@@ -105,8 +103,14 @@ def create_scheduled_task(executable_path, task_name):
         $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 365)
         Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "{task_name}" -Description "Esegue il processo custom ogni 5 minuti"
         """
-
         subprocess.run(["powershell", "-Command", create_task_command], check=True)
+
+        check_process_command = f"""
+        if (-not (Get-Process -Name 'main' -ErrorAction SilentlyContinue)) {{
+            Start-Process '{executable_path}'
+        }}
+        """
+        subprocess.run(["powershell", "-Command", check_process_command], check=True)
 
 
 def save_program_in_location(src_file, dest_folder):

