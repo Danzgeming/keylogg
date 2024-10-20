@@ -1,12 +1,12 @@
 dropbox
 geocoder
+mss
 numpy
 pillow
 poolmanager
 psutil
 pyinstaller
 pynput
-pyscreenshot
 requests
 sounddevice
 urllib3

