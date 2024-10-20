@@ -41,13 +41,16 @@ def send_mail_with_attachment(
         payload.add_header("Content-Disposition", f"attachment; filename={attachment}")
         message.attach(payload)
 
-    session = smtplib.SMTP(smtp_server, smtp_port)
-    # session.starttls()  # Enable security
-    session.login(email_address, email_password)
-    text = message.as_string()
-    session.sendmail(email_sender, email_receiver, text)
-    session.quit()
-
+    try:
+        session = smtplib.SMTP(smtp_server, smtp_port)
+        # session.starttls()  # Enable security
+        session.login(email_address, email_password)
+        text = message.as_string()
+        session.sendmail(email_sender, email_receiver, text)
+        session.quit()
+    except Exception as e:
+        print(f"Errore nell'invio dell'email: {e}")
+        return False
     return True
 
 
