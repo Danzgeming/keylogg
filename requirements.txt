@@ -1,12 +1,11 @@
+dotenv
 dropbox
 geocoder
 mss
 numpy
-pillow
 poolmanager
 psutil
 pyinstaller
 pynput
 requests
 sounddevice
-urllib3

